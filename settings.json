@@ -1,0 +1,15 @@
+{
+    "fcm_token": "cCsZqvMlHLWiRM0XlQmQBc:APA91bEcCRrohhCR5vbFI0BR78cwEcY0O4Wq5T9bb5aNtyGbYglF0XXTSGe-JKAgtCMIYMPOtT3jrosrEKYw2G8LVII_EUZIlmq1mobE4C7RU0jnCfFLN8E",
+    "email_config": {
+        "enabled": true,
+        "sender": "",
+        "password": "00",
+        "recipient": ""
+    },
+    "sms_config": {
+        "enabled": false,
+        "provider": "telegram",
+        "telegram_token": "",
+        "telegram_chat_id": ""
+    }
+}
