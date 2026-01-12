@@ -57,7 +57,7 @@ class CameraService:
                 },
                 'labels': _good_labels,
                 'top_k': 5,
-                'confidence_threshold': 0.25,
+                'confidence_threshold': 0.45,
                 'model_name': 'mobilenet'
             }
 

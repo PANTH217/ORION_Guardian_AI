@@ -1,15 +1,15 @@
 {
-    "fcm_token": "cCsZqvMlHLWiRM0XlQmQBc:APA91bEcCRrohhCR5vbFI0BR78cwEcY0O4Wq5T9bb5aNtyGbYglF0XXTSGe-JKAgtCMIYMPOtT3jrosrEKYw2G8LVII_EUZIlmq1mobE4C7RU0jnCfFLN8E",
+    "fcm_token": "",
     "email_config": {
         "enabled": true,
-        "sender": "panthhaveliwala@gmail.com",
-        "password": "kpvk fhzt pnza jckq",
-        "recipient": "dhggaming49@gmail.com"
+        "sender": "",
+        "password": "",
+        "recipient": ""
     },
     "sms_config": {
         "enabled": true,
         "provider": "telegram",
-        "telegram_token": "8516742754:AAFF8ezrGs0VIiLKkRfUNq76NUGqPXFyZB8",
-        "telegram_chat_id": "1107651296"
+        "telegram_token": "",
+        "telegram_chat_id": ""
     }
 }

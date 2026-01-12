@@ -245,8 +245,9 @@ class FCMNotifier:
             
             # Using standard Gmail settings. 
             # Note: For production, this should be configurable or handle different providers
-            server = smtplib.SMTP('smtp.gmail.com', 587)
-            server.starttls()
+            # Switched to SSL (465) for better stability than STARTTLS (587)
+            server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+            # server.starttls() # Not needed for SSL
             server.login(self.email_sender, self.email_password)
             server.send_message(msg)
             server.quit()
