@@ -114,6 +114,16 @@ const Settings = () => {
                                     className="input-cyber"
                                     placeholder={emailConfig.password_set ? "(Hidden) Enter new to change" : "xxxx xxxx xxxx xxxx"}
                                 />
+                                <div className="mt-2 text-sm text-slate-300 bg-slate-800/50 p-3 rounded border border-white/5">
+                                    <p className="font-bold text-slate-200 mb-1">How to get an App Password:</p>
+                                    <ol className="list-decimal pl-4 space-y-1">
+                                        <li>Go to your <b>Google Account</b> {'>'} Security.</li>
+                                        <li>Enable <b>2-Step Verification</b> if not already on.</li>
+                                        <li>Search for "App Passwords" in the search bar.</li>
+                                        <li>Create a new app password (name it "GuardianAI").</li>
+                                        <li>Copy the 16-character code and paste it here.</li>
+                                    </ol>
+                                </div>
                             </div>
                             <div className="md:col-span-2">
                                 <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Recipient Email</label>
@@ -152,7 +162,7 @@ const Settings = () => {
 
                                 <div className="space-y-4">
                                     <div className="bg-slate-800/50 p-4 rounded-lg border border-white/5">
-                                        <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Telegram Bot Token</label>
+                                        <label className="block text-sm font-bold text-slate-400 uppercase mb-2">Telegram Bot Token</label>
                                         <input
                                             type="text"
                                             value={smsConfig.telegram_token || ''}
@@ -160,7 +170,7 @@ const Settings = () => {
                                             className="input-cyber w-full"
                                             placeholder="123456789:ABCdef..."
                                         />
-                                        <p className="text-xs text-slate-500 mt-2">
+                                        <p className="text-sm text-slate-300 mt-2">
                                             1. Search for <b>@BotFather</b> on Telegram.<br />
                                             2. Send command <code>/newbot</code> and follow instructions.<br />
                                             3. Paste the provided <b>HTTP API Token</b> here.
@@ -168,7 +178,7 @@ const Settings = () => {
                                     </div>
 
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Telegram Chat ID</label>
+                                        <label className="block text-sm font-bold text-slate-400 uppercase mb-2">Telegram Chat ID</label>
                                         <input
                                             type="text"
                                             value={smsConfig.telegram_chat_id || ''}
@@ -176,7 +186,7 @@ const Settings = () => {
                                             className="input-cyber"
                                             placeholder="123456789"
                                         />
-                                        <p className="text-xs text-slate-500 mt-2">
+                                        <p className="text-sm text-slate-300 mt-2">
                                             1. Start a chat with your new bot.<br />
                                             2. Search for <b>@userinfobot</b> and click Start.<br />
                                             3. Copy your <b>Id</b> and paste it here.

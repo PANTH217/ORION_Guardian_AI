@@ -55,50 +55,12 @@ class CameraService:
         return FallDetector(**config)
 
     def start_camera(self):
-        # Prevent re-entrant or duplicate start attempts
-        if self.camera is not None and self.camera.isOpened():
-            return
-        if hasattr(self, '_is_starting') and self._is_starting:
-            return
-        
-        self._is_starting = True
-        try:
-            print("Attempting to open Real Camera...", flush=True)
-            # Try index 0 first
-            cap = cv2.VideoCapture(0)
-            if cap.isOpened():
-                # Warmup
-                time.sleep(1.0)
-                ret, _ = cap.read()
-                if ret:
-                    self.camera = cap
-                    if self.logger: self.logger("Camera Connected Successfully", "success")
-                    return
-                else:
-                    cap.release()
-            
-            # If 0 fails, try 1 (external cam?)
-            print("Index 0 failed, trying Index 1...", flush=True)
-            cap = cv2.VideoCapture(1)
-            if cap.isOpened():
-                time.sleep(1.0)
-                ret, _ = cap.read()
-                if ret:
-                    self.camera = cap
-                    if self.logger: self.logger("External Camera Connected", "success")
-                    return
-                else:
-                    cap.release()
-    
-            print("CRITICAL: No Camera Found on Index 0 or 1", flush=True)
-            # No fallback. Leave self.camera as None.
-        finally:
-            self._is_starting = False
+        # Migrated to Frontend. Backend no longer accesses hardware directly.
+        pass
 
     def stop_camera(self):
-        if self.camera:
-            self.camera.release()
-            self.camera = None
+        # Migrated to Frontend.
+        pass
 
     def reset_alert(self):
         """Manually clears the fall detection latch."""
@@ -315,3 +277,96 @@ class CameraService:
             frame_bytes = buffer.tobytes()
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+
+    def process_frame(self, image_bytes):
+        """
+        Processes a single frame uploaded from the frontend.
+        Returns detection results (status, keypoints) in JSON-compatible format.
+        """
+        try:
+            # Decode image
+            nparr = np.frombuffer(image_bytes, np.uint8)
+            frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            
+            if frame is None:
+                return {"error": "Failed to decode image"}
+
+            # Prepare for AI
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            pil_image = Image.fromarray(rgb_frame)
+
+            # Lazy-load AI if needed (Synchronous here to return result immediately)
+            if self.fall_detector is None:
+                # If we are handling requests, we need the detector NOW.
+                if hasattr(self, '_ai_loading_thread_started') and self._ai_loading_thread_started:
+                    # It's loading... wait? or just fail gracefully?
+                    return {"status": "LOADING_AI", "message": " AI is initializing..."}
+                
+                try:
+                    self.fall_detector = self._init_detector()
+                except Exception as e:
+                     return {"error": f"AI Init Failed: {str(e)}"}
+
+            # Run Inference
+            if self.fall_detector:
+                processed_sample = next(self.fall_detector.process_sample(image=pil_image))
+                inference_result = processed_sample.get('inference_result')
+                
+                # Default Clean Result
+                result = {
+                    "status": "NORMAL",
+                    "detections": [],
+                    "alert_active": False
+                }
+
+                # Check Latch
+                current_time = time.time()
+                is_latched = hasattr(self, 'alert_latch_until') and current_time < self.alert_latch_until
+
+                if inference_result:
+                    for det in inference_result:
+                        label = det.get('label')
+                        keypoints = det.get('keypoint_corr') # { 'nose': [x,y], ... }
+                        
+                        # Serialize Keypoints (numpy floats to native python floats)
+                        serialized_kpts = {}
+                        if keypoints:
+                            for k, v in keypoints.items():
+                                if v is not None:
+                                    serialized_kpts[k] = [float(v[0]), float(v[1])]
+
+                        detection_data = {
+                            "label": label,
+                            "keypoints": serialized_kpts,
+                            "score": float(det.get('score', 0))
+                        }
+                        result["detections"].append(detection_data)
+
+                        if label == 'FALL':
+                            self.alert_latch_until = current_time + 5.0
+                            is_latched = True
+                            
+                            # Trigger Notification (Background)
+                            # We re-encode the frame for the alert image
+                            _, img_encoded = cv2.imencode('.jpg', frame)
+                            import datetime
+                            now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                            payload = {'timestamp': now_str}
+                            if self.current_location:
+                                payload.update(self.current_location)
+                            
+                            # Run notification in separate thread to not block response
+                            threading.Thread(target=self.notifier.send_fall_alert, 
+                                           args=(img_encoded.tobytes(), payload)).start()
+
+                if is_latched:
+                    result["status"] = "FALL_DETECTED"
+                    result["alert_active"] = True
+                
+                return result
+            
+            return {"status": "AI_NOT_READY"}
+
+        except Exception as e:
+            print(f"Frame Processing Error: {e}", flush=True)
+            return {"error": str(e)}

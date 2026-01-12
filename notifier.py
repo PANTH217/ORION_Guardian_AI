@@ -45,7 +45,8 @@ class FCMNotifier:
     def _init_firebase(self):
         try:
             # Check if service account key exists
-            key_path = 'serviceAccountKey.json'
+            _dir = os.path.dirname(os.path.abspath(__file__))
+            key_path = os.path.join(_dir, 'serviceAccountKey.json')
             if os.path.exists(key_path):
                 cred = credentials.Certificate(key_path)
                 # Check if already initialized to avoid error on reload

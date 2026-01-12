@@ -1,8 +1,11 @@
-from flask import Flask, Response, request, jsonify
-from flask_cors import CORS
-from camera_service import CameraService
-import threading
 import os
+# Fix for Protobuf 3.x vs 4.x compatibility with TensorFlow
+os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
+
+from flask import Flask, render_template, Response, jsonify, request, send_from_directory
+from flask_cors import CORS
+from camera_service import CameraService 
+import threading
 import json
 
 app = Flask(__name__)
@@ -122,6 +125,26 @@ def get_history():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/process_frame', methods=['POST'])
+def process_frame():
+    try:
+        # Check if frame is in files
+        if 'frame' not in request.files:
+             # Fallback for base64/raw? No, stick to multipart for efficiency
+            return jsonify({"error": "No frame file provided"}), 400
+        
+        file = request.files['frame']
+        # Read bytes
+        image_bytes = file.read()
+        
+        # Process
+        result = camera_service.process_frame(image_bytes)
+        return jsonify(result), 200
+    except Exception as e:
+        add_system_log(f"API Processing Error: {e}", "error")
+        return jsonify({"error": str(e)}), 500
+
+
 
 # Initial Startup Log
 add_system_log("System Startup Sequence Initiated", "info")
@@ -133,4 +156,7 @@ if __name__ == '__main__':
     threading.Thread(target=camera_service.start_camera, daemon=True).start()
     
     add_system_log("Web Server Starting on Port 5000 (Single Process Mode)", "success")
-    app.run(host='0.0.0.0', port=5000, threaded=True, debug=False, use_reloader=False)
+    
+    # Render assigns port via environment variable
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, threaded=True, debug=False, use_reloader=False)
