@@ -5,7 +5,7 @@ Pillow>=5.4.1
 PyYAML>=5.1.2
 opencv-python-headless
 # tensorflow-cpu -- Replaced with tflite-runtime for Render memory optimization
-tflite-runtime==2.14.0; sys_platform == 'linux'
+tflite-runtime==2.13.0; sys_platform == 'linux'
 tensorflow-cpu; sys_platform != 'linux'
 gunicorn
 firebase-admin
