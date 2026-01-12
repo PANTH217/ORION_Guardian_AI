@@ -2,11 +2,11 @@
     "rewrites": [
         {
             "source": "/api/(.*)",
-            "destination": "https://guardian-ai-backend.onrender.com/api/$1"
+            "destination": "https://orion-guardian-ai.onrender.com/api/$1"
         },
         {
             "source": "/video_feed",
-            "destination": "https://guardian-ai-backend.onrender.com/video_feed"
+            "destination": "https://orion-guardian-ai.onrender.com/video_feed"
         },
         {
             "source": "/(.*)",
