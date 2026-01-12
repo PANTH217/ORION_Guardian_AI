@@ -1,12 +1,12 @@
-Flask
+F# --extra-index-url https://google-coral.github.io/py-repo/
+flask
 flask-cors
-numpy>=1.16.2
-Pillow>=5.4.1
+numpy
+pillow
 PyYAML>=5.1.2
 opencv-python-headless
-# tensorflow-cpu -- Replaced with tflite-runtime for Render memory optimization
-tflite-runtime==2.13.0; sys_platform == 'linux'
-tensorflow-cpu; sys_platform != 'linux'
+# tensorflow-cpu -- Switching to full TF to resolve runtime crashes
+tensorflow-cpu
 gunicorn
 firebase-admin
 requests
