@@ -1,4 +1,4 @@
-F# --extra-index-url https://google-coral.github.io/py-repo/
+
 flask
 flask-cors
 numpy
