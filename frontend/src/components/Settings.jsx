@@ -14,7 +14,7 @@ const Settings = () => {
 
     // Fetch settings on load
     useEffect(() => {
-        fetch('http://localhost:5000/api/get_settings')
+        fetch('/api/get_settings')
             .then(res => res.json())
             .then(data => {
                 if (data.email_config) setEmailConfig(prev => ({ ...prev, ...data.email_config }));
