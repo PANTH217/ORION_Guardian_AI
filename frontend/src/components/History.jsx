@@ -46,7 +46,7 @@ const History = () => {
                             onClick={async () => {
                                 if (confirm("Are you sure you want to delete ALL history logs? This cannot be undone.")) {
                                     try {
-                                        await fetch('http://localhost:5000/api/history', { method: 'DELETE' });
+                                        await fetch('/api/history', { method: 'DELETE' });
                                         fetchData();
                                     } catch (e) {
                                         console.error(e);

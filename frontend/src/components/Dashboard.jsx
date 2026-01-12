@@ -275,8 +275,7 @@ const Dashboard = () => {
         if (!user) return;
         const fetchLogs = async () => {
             try {
-                const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-                const res = await fetch(`${API_URL}/api/system_logs`);
+                const res = await fetch(`/api/system_logs`);
                 const data = await res.json();
                 if (Array.isArray(data)) setSystemLogs(data);
             } catch (e) { }
