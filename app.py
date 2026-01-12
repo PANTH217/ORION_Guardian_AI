@@ -187,7 +187,11 @@ def debug_server():
             for f in os.listdir(models_dir):
                 f_path = os.path.join(models_dir, f)
                 size = os.path.getsize(f_path) if os.path.isfile(f_path) else 'DIR'
-                files_info.append({"name": f, "size": size})
+                md5 = "dir"
+                if os.path.isfile(f_path):
+                     with open(f_path, 'rb') as tf:
+                         md5 = hashlib.md5(tf.read()).hexdigest()
+                files_info.append({"name": f, "size": size, "md5": md5})
         
         # Check camera_service hash to verify code version
         cs_path = os.path.join(_dir, 'camera_service.py')
@@ -201,7 +205,7 @@ def debug_server():
             "models_dir_exists": os.path.exists(models_dir),
             "files": files_info,
             "camera_service_hash": cs_hash,
-            "deploy_id": "LFS_FIX_VERIFICATION_001"
+            "deploy_id": "LFS_FIX_VERIFICATION_002_MD5"
         }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
