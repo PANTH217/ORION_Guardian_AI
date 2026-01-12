@@ -173,6 +173,39 @@ def process_frame():
 
 
 
+
+@app.route('/api/debug_server', methods=['GET'])
+def debug_server():
+    """Temporary route to check file existence on Render."""
+    try:
+        import hashlib
+        _dir = os.path.dirname(os.path.abspath(__file__))
+        models_dir = os.path.join(_dir, 'ai_models')
+        
+        files_info = []
+        if os.path.exists(models_dir):
+            for f in os.listdir(models_dir):
+                f_path = os.path.join(models_dir, f)
+                size = os.path.getsize(f_path) if os.path.isfile(f_path) else 'DIR'
+                files_info.append({"name": f, "size": size})
+        
+        # Check camera_service hash to verify code version
+        cs_path = os.path.join(_dir, 'camera_service.py')
+        cs_hash = "missing"
+        if os.path.exists(cs_path):
+            with open(cs_path, 'rb') as f:
+                cs_hash = hashlib.md5(f.read()).hexdigest()
+
+        return jsonify({
+            "status": "online",
+            "models_dir_exists": os.path.exists(models_dir),
+            "files": files_info,
+            "camera_service_hash": cs_hash,
+            "deploy_id": "LFS_FIX_VERIFICATION_001"
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 # Initial Startup Log
 add_system_log("System Startup Sequence Initiated", "info")
 
