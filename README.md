@@ -26,7 +26,7 @@ graph TD
     
     subgraph "Backend (Python/Flask)"
         CamService --1. Get Frame--> AsyncBuffer[Frame Buffer]
-        AsyncBuffer --2. Async Inference--> AIEngine[AI Engine (TensorFlow Lite)]
+        AsyncBuffer --2. Async Inference--> AIEngine["AI Engine (TensorFlow Lite)"]
         AIEngine --3. Keypoints & Score--> Logic[Fall Logic Heuristics]
         Logic --4. Alert Trigger--> Notifier[Notification Service]
         Verifier[Flask Server] --5. Stream MJPEG--> FrontendAPI
