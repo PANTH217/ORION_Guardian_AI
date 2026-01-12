@@ -200,12 +200,48 @@ def debug_server():
             with open(cs_path, 'rb') as f:
                 cs_hash = hashlib.md5(f.read()).hexdigest()
 
+        # Check TFLite Version & Load Test
+        tflite_version = "unknown"
+        load_test = "not_attempted"
+        
+        try:
+            import tflite_runtime.interpreter as tflite
+            tflite_version = "tflite_runtime " + getattr(tflite, '__version__', 'unknown')
+        except ImportError:
+            try:
+                import tensorflow.lite as tflite
+                tflite_version = "tensorflow " + getattr(tflite, '__version__', 'unknown')
+            except:
+                tflite_version = "none"
+
+        # Try loading the model specifically
+        if os.path.exists(models_dir):
+            model_path = os.path.join(models_dir, 'posenet_mobilenet_v1_100_257x257_multi_kpt_stripped.tflite')
+            if os.path.exists(model_path):
+                try:
+                    if tflite_version != "none":
+                        # We need the Interpreter class. Logic adapted from inference.py
+                        try:
+                            from tflite_runtime.interpreter import Interpreter
+                        except:
+                            from tensorflow.lite import Interpreter
+                        
+                        interpreter = Interpreter(model_path=model_path)
+                        interpreter.allocate_tensors()
+                        load_test = "SUCCESS"
+                    else:
+                        load_test = "NO_LIBRARY"
+                except Exception as ex:
+                    load_test = f"FAILED: {str(ex)}"
+
         return jsonify({
             "status": "online",
+            "tflite_version": tflite_version,
+            "model_load_test": load_test,
             "models_dir_exists": os.path.exists(models_dir),
             "files": files_info,
             "camera_service_hash": cs_hash,
-            "deploy_id": "LFS_FIX_VERIFICATION_002_MD5"
+            "deploy_id": "FIX_TFLITE_2_13"
         }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
