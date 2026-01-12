@@ -201,8 +201,8 @@ class CameraService:
                         processed_sample = next(self.fall_detector.process_sample(image=pil_image))
                     except Exception as e:
                         # If inference fails, just show raw video
-                        # print(f"Inference Error: {e}", flush=True)
-                         pass
+                        print(f"Inference Error: {e}", flush=True)
+                        pass
                 
                 status_text = "Status: No Detection"
                 if self.fall_detector:

@@ -4,7 +4,6 @@ os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 
 from flask import Flask, render_template, Response, jsonify, request, send_from_directory
 from flask_cors import CORS
-from camera_service import CameraService 
 import threading
 import json
 
@@ -31,7 +30,35 @@ def add_system_log(message, level='info'):
     print(f"[{level.upper()}] {message}", flush=True)
 
 # Pass logger to services
-camera_service = CameraService(logger=add_system_log)
+camera_service = None
+try:
+    from camera_service import CameraService 
+    camera_service = CameraService(logger=add_system_log)
+except Exception as e:
+    add_system_log(f"CRITICAL STARTUP ERROR: {str(e)}", "error")    
+    import traceback
+    traceback.print_exc()
+    # Create a dummy service to prevent attribute errors in routes
+    class DummyService:
+        def __init__(self): self.notifier = None
+        def generate_frames(self): yield b''
+        def update_fcm_token(self, t): pass
+        def update_location(self, l, lg): pass
+        def reset_alert(self): pass
+        def process_frame(self, i): return {"error": "Backend Startup Failed"}
+        
+        # Mock notifier for settings route
+        class MockNotifier:
+             email_enabled = False
+             email_sender = ""
+             email_recipient = ""
+             email_password = ""
+             sms_enabled = False
+             telegram_token = ""
+             telegram_chat_id = ""
+        notifier = MockNotifier()
+        
+    camera_service = DummyService()
 
 @app.route('/video_feed')
 def video_feed():
