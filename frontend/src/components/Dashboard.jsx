@@ -175,7 +175,9 @@ const Dashboard = () => {
                 formData.append('frame', blob);
 
                 try {
-                    const res = await fetch('http://localhost:5000/api/process_frame', {
+                    // Use VITE_API_URL from environment or default to local proxy for dev
+                    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+                    const res = await fetch(`${API_URL}/api/process_frame`, {
                         method: 'POST',
                         body: formData
                     });
@@ -274,7 +276,8 @@ const Dashboard = () => {
         if (!user) return;
         const fetchLogs = async () => {
             try {
-                const res = await fetch('http://localhost:5000/api/system_logs');
+                const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+                const res = await fetch(`${API_URL}/api/system_logs`);
                 const data = await res.json();
                 if (Array.isArray(data)) setSystemLogs(data);
             } catch (e) { }
