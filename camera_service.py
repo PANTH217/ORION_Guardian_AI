@@ -61,13 +61,20 @@ class CameraService:
                 'model_name': 'mobilenet'
             }
 
-            if self.logger:
-                self.logger(
-                    "AI Model Loaded: PoseNet MobileNet v1 (Sensitivity: Balanced)",
-                    "success"
-                )
-
-            self.fall_detector = FallDetector(**config)
+            try:
+                self.fall_detector = FallDetector(**config)
+                if self.logger:
+                    self.logger(
+                        "AI Model Loaded: PoseNet MobileNet v1 (Sensitivity: Balanced)",
+                        "success"
+                    )
+            except Exception as e:
+                self.ai_disabled = True
+                self.ai_error_msg = str(e)
+                if self.logger:
+                    self.logger(f"AI Model Load FAILED: {e}", "error")
+                raise e # Re-raise to be caught by process_frame
+            
             return self.fall_detector
 
     def start_camera(self):
@@ -285,6 +292,9 @@ class CameraService:
 
             # Lazy-load AI if needed (Synchronous here to return result immediately)
             # Lazy-load AI if needed (Singleton Guard)
+            if getattr(self, 'ai_disabled', False):
+                return {"status": "AI_ERROR", "error": getattr(self, 'ai_error_msg', "Unknown AI Error")}
+
             if self.fall_detector is None:
                 try:
                     self._init_detector()
