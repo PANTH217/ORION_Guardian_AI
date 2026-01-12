@@ -3,7 +3,7 @@ services:
     name: guardian-ai-backend
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    startCommand: gunicorn app:app --timeout 120 --workers 1 --threads 8 --worker-class gthread --preload
     envVars:
       - key: PYTHON_VERSION
         value: 3.10.0

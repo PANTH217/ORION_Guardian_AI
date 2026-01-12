@@ -8,6 +8,9 @@ import io
 import os # Added for _init_detector
 import threading # For Async AI Loading
 
+
+_model_lock = threading.Lock()
+
 class CameraService:
     def __init__(self, logger=None):
         self.camera = None
@@ -29,30 +32,43 @@ class CameraService:
         if self.logger: self.logger(f"GPS Location Updated: {lat}, {lng}", "info")
 
     def _init_detector(self):
-        # Helper to load AI Model Configuration
-        _dir = os.path.dirname(os.path.abspath(__file__))
-        _good_tflite_model = os.path.join(
-            _dir,
-            'ai_models/posenet_mobilenet_v1_100_257x257_multi_kpt_stripped.tflite'
-        )
-        _good_edgetpu_model = os.path.join(
-            _dir,
-            'ai_models/posenet_mobilenet_v1_075_721_1281_quant_decoder_edgetpu.tflite'
-        )
-        _good_labels = os.path.join(_dir, 'ai_models/pose_labels.txt')
-        
-        config = {
-            'model': {
-                'tflite': _good_tflite_model,
-                'edgetpu': _good_edgetpu_model,
-            },
-            'labels': _good_labels,
-            'top_k': 5,
-            'confidence_threshold': 0.25,
-            'model_name': 'mobilenet'
-        }
-        if self.logger: self.logger("AI Model Loaded: PoseNet MobileNet v1 (Sensitivity: Balanced)", "success")
-        return FallDetector(**config)
+        if self.fall_detector is not None:
+            return self.fall_detector
+
+        with _model_lock:
+            if self.fall_detector is not None:
+                return self.fall_detector
+
+            _dir = os.path.dirname(os.path.abspath(__file__))
+            _good_tflite_model = os.path.join(
+                _dir,
+                'ai_models/posenet_mobilenet_v1_100_257x257_multi_kpt_stripped.tflite'
+            )
+            _good_edgetpu_model = os.path.join(
+                _dir,
+                'ai_models/posenet_mobilenet_v1_075_721_1281_quant_decoder_edgetpu.tflite'
+            )
+            _good_labels = os.path.join(_dir, 'ai_models/pose_labels.txt')
+            
+            config = {
+                'model': {
+                    'tflite': _good_tflite_model,
+                    'edgetpu': _good_edgetpu_model,
+                },
+                'labels': _good_labels,
+                'top_k': 5,
+                'confidence_threshold': 0.25,
+                'model_name': 'mobilenet'
+            }
+
+            if self.logger:
+                self.logger(
+                    "AI Model Loaded: PoseNet MobileNet v1 (Sensitivity: Balanced)",
+                    "success"
+                )
+
+            self.fall_detector = FallDetector(**config)
+            return self.fall_detector
 
     def start_camera(self):
         # Migrated to Frontend. Backend no longer accesses hardware directly.
@@ -157,40 +173,12 @@ class CameraService:
                 rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 pil_image = Image.fromarray(rgb_frame)
                 
-                # ASYNC AI LOADING
-                # We check if detector is ready. If not, and we haven't started loading, start thread.
+                # Singleton AI Loading
                 if self.fall_detector is None:
-                    if not hasattr(self, '_ai_loading_thread_started') or not self._ai_loading_thread_started: # Check if thread has started
-                        self._ai_loading_thread_started = True
-                        print("Starting Async AI Loader Thread...", flush=True)
-                        
-                        def _load_worker():
-                            try:
-                                # Verify method exists before calling
-                                if not hasattr(self, '_init_detector'):
-                                    print("CRITICAL ERROR: _init_detector method MISSING on CameraService instance!", flush=True)
-                                    return
+                    self._init_detector()
 
-                                print("Thread: Calling _init_detector()...", flush=True)
-                                detector = self._init_detector()
-                                self.fall_detector = detector # Atomic assignment
-                                print("Async AI Load Complete! Detector Set.", flush=True)
-                            except Exception as e:
-                                print(f"Async AI Load Failed: {e}", flush=True)
-                                import traceback
-                                traceback.print_exc()
-                                # Reset flag to retry later? Or just give up.
-                                self._ai_loading_thread_started = False 
-
-                        t = threading.Thread(target=_load_worker, daemon=True)
-                        t.start()
-
-                    # Visual Feedback
-                    cv2.putText(frame, "AI LOADING...", (10, 60), 
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
-                         
-                else:
-                     # AI IS READY
+                # AI IS READY
+                if self.fall_detector:
                      # DEBUG VISUAL
                     cv2.putText(frame, f"AI SYSTEM ONLINE", (10, 60), 
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
@@ -296,14 +284,10 @@ class CameraService:
             pil_image = Image.fromarray(rgb_frame)
 
             # Lazy-load AI if needed (Synchronous here to return result immediately)
+            # Lazy-load AI if needed (Singleton Guard)
             if self.fall_detector is None:
-                # If we are handling requests, we need the detector NOW.
-                if hasattr(self, '_ai_loading_thread_started') and self._ai_loading_thread_started:
-                    # It's loading... wait? or just fail gracefully?
-                    return {"status": "LOADING_AI", "message": " AI is initializing..."}
-                
                 try:
-                    self.fall_detector = self._init_detector()
+                    self._init_detector()
                 except Exception as e:
                      return {"error": f"AI Init Failed: {str(e)}"}
 

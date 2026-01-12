@@ -48,7 +48,15 @@ class FCMNotifier:
             _dir = os.path.dirname(os.path.abspath(__file__))
             key_path = os.path.join(_dir, 'serviceAccountKey.json')
             if os.path.exists(key_path):
-                cred = credentials.Certificate(key_path)
+                # Manually load and fix private key format
+                with open(key_path, 'r') as f:
+                    service_account_info = json.load(f)
+                
+                # Fix escaped newlines if present
+                if 'private_key' in service_account_info:
+                    service_account_info['private_key'] = service_account_info['private_key'].replace('\\n', '\n')
+
+                cred = credentials.Certificate(service_account_info)
                 # Check if already initialized to avoid error on reload
                 try:
                     firebase_admin.get_app()
