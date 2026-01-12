@@ -4,8 +4,7 @@ numpy>=1.16.2
 Pillow>=5.4.1
 PyYAML>=5.1.2
 opencv-python-headless
-tensorflow
-protobuf==3.20.3
+tensorflow-cpu
 gunicorn
 firebase-admin
 requests
