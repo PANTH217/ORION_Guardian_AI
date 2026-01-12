@@ -175,9 +175,8 @@ const Dashboard = () => {
                 formData.append('frame', blob);
 
                 try {
-                    // Use VITE_API_URL from environment or default to local proxy for dev
-                    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-                    const res = await fetch(`${API_URL}/api/process_frame`, {
+                    // Use relative path for Vercel/Render proxy
+                    const res = await fetch(`/api/process_frame`, {
                         method: 'POST',
                         body: formData
                     });
