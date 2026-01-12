@@ -15,7 +15,7 @@ const History = () => {
 
     const fetchData = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/history');
+            const res = await fetch('/api/history');
             const data = await res.json();
 
             if (Array.isArray(data)) {
