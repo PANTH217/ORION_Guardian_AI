@@ -70,24 +70,43 @@ class FCMNotifier:
 
     def _load_settings(self):
         try:
+            data = {}
+            # 1. Try Loading from Local File
             if os.path.exists(self.settings_file):
-                with open(self.settings_file, 'r') as f:
-                    data = json.load(f)
-                    self.fcm_token = data.get('fcm_token', '')
-                    
-                    # Load Email
-                    email_conf = data.get('email_config', {})
-                    self.email_enabled = email_conf.get('enabled', False)
-                    self.email_sender = email_conf.get('sender', '')
-                    self.email_password = email_conf.get('password', '')
-                    self.email_recipient = email_conf.get('recipient', '')
-                    
-                    # Load Telegram
-                    sms_conf = data.get('sms_config', {})
-                    self.sms_enabled = sms_conf.get('enabled', False)
-                    self.sms_provider = sms_conf.get('provider', 'telegram')
-                    self.telegram_token = sms_conf.get('telegram_token', '')
-                    self.telegram_chat_id = sms_conf.get('telegram_chat_id', '')
+                try:
+                    with open(self.settings_file, 'r') as f:
+                        data = json.load(f)
+                except Exception as e:
+                    print(f"WARNING: Error reading settings.json: {e}", flush=True)
+
+            # 2. Try Loading from Environment Variable (Render "Secret File" or Env Var)
+            # User mentioned putting settings.json content in an env var
+            env_settings = os.environ.get('SETTINGS_JSON')
+            if env_settings:
+                try:
+                    data = json.loads(env_settings)
+                    print("DEBUG: Loaded settings from SETTINGS_JSON environment variable", flush=True)
+                except Exception as e:
+                    print(f"ERROR: Failed to parse SETTINGS_JSON env var: {e}", flush=True)
+
+            # 3. Parse Data
+            self.fcm_token = data.get('fcm_token', os.environ.get('FCM_TOKEN', ''))
+            
+            # Email
+            email_conf = data.get('email_config', {})
+            self.email_enabled = email_conf.get('enabled', os.environ.get('EMAIL_ENABLED', 'True').lower() == 'true')
+            self.email_sender = email_conf.get('sender', os.environ.get('EMAIL_SENDER', ''))
+            self.email_password = email_conf.get('password', os.environ.get('EMAIL_PASSWORD', ''))
+            self.email_recipient = email_conf.get('recipient', os.environ.get('EMAIL_RECIPIENT', ''))
+            self.email_server = email_conf.get('smtp_server', os.environ.get('SMTP_SERVER', 'smtp.gmail.com'))
+            self.email_port = int(email_conf.get('smtp_port', os.environ.get('SMTP_PORT', 465)))
+            
+            # Telegram
+            sms_conf = data.get('sms_config', {})
+            self.sms_enabled = sms_conf.get('enabled', os.environ.get('SMS_ENABLED', 'True').lower() == 'true')
+            self.sms_provider = sms_conf.get('provider', 'telegram')
+            self.telegram_token = sms_conf.get('telegram_token', os.environ.get('TELEGRAM_TOKEN', ''))
+            self.telegram_chat_id = sms_conf.get('telegram_chat_id', os.environ.get('TELEGRAM_CHAT_ID', ''))
 
             if self.logger: self.logger("Notification Settings Loaded", "info")
         except Exception as e:
@@ -103,9 +122,13 @@ class FCMNotifier:
             self.email_enabled = conf.get('enabled', self.email_enabled)
             self.email_sender = conf.get('sender', self.email_sender)
             self.email_recipient = conf.get('recipient', self.email_recipient)
-            # Only update password if provided
+            # Only update password if provided and not empty
             if conf.get('password'):
                 self.email_password = conf['password']
+            
+            # Update Server/Port if provided
+            self.email_server = conf.get('smtp_server', self.email_server if hasattr(self, 'email_server') else 'smtp.gmail.com')
+            self.email_port = int(conf.get('smtp_port', self.email_port if hasattr(self, 'email_port') else 465))
 
         if 'sms_config' in new_settings:
             conf = new_settings['sms_config']
@@ -124,7 +147,9 @@ class FCMNotifier:
                     'enabled': self.email_enabled,
                     'sender': self.email_sender,
                     'password': self.email_password,
-                    'recipient': self.email_recipient
+                    'recipient': self.email_recipient,
+                    'smtp_server': self.email_server if hasattr(self, 'email_server') else 'smtp.gmail.com',
+                    'smtp_port': self.email_port if hasattr(self, 'email_port') else 465
                 },
                 'sms_config': {
                     'enabled': self.sms_enabled,
@@ -243,11 +268,17 @@ class FCMNotifier:
                 img = MIMEImage(image_bytes, name="fall_snapshot.jpg")
                 msg.attach(img)
             
-            # Using standard Gmail settings. 
-            # Note: For production, this should be configurable or handle different providers
-            # Switched to SSL (465) for better stability than STARTTLS (587)
-            server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-            # server.starttls() # Not needed for SSL
+            # Get SMTP settings with defaults for Gmail
+            smtp_server = self.email_server if hasattr(self, 'email_server') and self.email_server else 'smtp.gmail.com'
+            smtp_port = self.email_port if hasattr(self, 'email_port') and self.email_port else 465
+            
+            # Connect to valid server
+            if smtp_port == 587:
+                server = smtplib.SMTP(smtp_server, smtp_port)
+                server.starttls()
+            else:
+                server = smtplib.SMTP_SSL(smtp_server, smtp_port)
+                
             server.login(self.email_sender, self.email_password)
             server.send_message(msg)
             server.quit()
