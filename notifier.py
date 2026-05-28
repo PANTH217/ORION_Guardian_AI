@@ -273,15 +273,11 @@ class FCMNotifier:
             smtp_port = int(self.email_port if hasattr(self, 'email_port') and self.email_port else 587)
             
             # Connect to valid server
-            server = smtplib.SMTP(
-                smtp_server,
-                smtp_port,
-                timeout=20
-            )
-
-            server.ehlo()
-            server.starttls()
-            server.ehlo()
+            if smtp_port == 587:
+                server = smtplib.SMTP(smtp_server, smtp_port)
+                server.starttls()
+            else:
+                server = smtplib.SMTP_SSL(smtp_server, smtp_port)
                 
             server.login(self.email_sender, self.email_password)
             server.send_message(msg)
