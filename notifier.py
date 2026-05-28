@@ -270,7 +270,7 @@ class FCMNotifier:
             
             # Get SMTP settings with defaults for Gmail
             smtp_server = self.email_server if hasattr(self, 'email_server') and self.email_server else 'smtp.gmail.com'
-            smtp_port = self.email_port if hasattr(self, 'email_port') and self.email_port else 465
+            smtp_port = self.email_port if hasattr(self, 'email_port') and self.email_port else 587
             
             # Connect to valid server
             if smtp_port == 587:
